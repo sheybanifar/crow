@@ -4,7 +4,21 @@ import socket
 selector = selectors.DefaultSelector()
 
 def accept_connection(sock: socket.socket):
-    pass
+    if sock is server:
+        client, addr = sock.accept()
+        client.setblocking(False)
+
+        selector.register(
+            client,
+            selectors.EVENT_READ,
+            data=read_connection
+        )
+
+def read_connection(sock: socket.socket):
+    data = sock.recv(4096)
+    if not data:
+        selector.unregister(sock)
+        sock.close()
 
 server = socket.socket()
 server.bind(('127.0.0.1', 2001))
@@ -20,7 +34,5 @@ while True:
     events = selector.select()
 
     for key, mask in events:
-        if key.fileobj is server:
-            accept_connection(server)
-        else:
-            pass
+        callback = key.data
+        callback(key.fileobj)
