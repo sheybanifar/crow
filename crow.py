@@ -11,10 +11,61 @@ class Connection:
         self.send_buffer = bytearray()
 
     def read(self):
-        pass
+        data = self.sock.recv(4096)
+        self.recv_buffer += data
+
+        if not data:
+            self.close()
+
+        messages = self.parse_buffer()
+        for message in messages:
+            self.handle_message(message)
+
+        if self.send_buffer:
+            self.enable_write()
 
     def write(self):
         pass
+
+    def parse_buffer(self):
+        messages = []
+
+        while True:
+            if len(self.recv_buffer) < 2:
+                break
+
+            payload_length = int.from_bytes(
+                self.recv_buffer[:2],
+                'big'
+            )
+            total_length = 2 + payload_length
+            if len(self.recv_buffer) < total_length:
+                break
+
+            payload = self.recv_buffer[2:total_length]
+
+            self.recv_buffer = self.recv_buffer[total_length:]
+            messages.append(payload)
+
+        return messages
+
+    def handle_message(self, message):
+        self.send_buffer += message
+
+    def enable_write(self):
+        if self.events & selectors.EVENT_WRITE:
+            return
+
+        self.events |= selectors.EVENT_WRITE
+        selector.modify(
+            self.sock,
+            self.events,
+            data=self
+        )
+
+    def close(self):
+        selector.unregister(self.sock)
+        self.sock.close()
 
 def accept_connection(sock: socket.socket):
     if sock is server:
