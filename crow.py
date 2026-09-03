@@ -70,7 +70,7 @@ class Connection:
         )
 
     def disable_write(self):
-        if self.events & ~selectors.EVENT_WRITE:
+        if not (self.events & selectors.EVENT_WRITE):
             return
 
         self.events &= ~selectors.EVENT_WRITE
