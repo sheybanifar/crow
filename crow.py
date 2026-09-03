@@ -12,10 +12,12 @@ class Connection:
 
     def read(self):
         data = self.sock.recv(4096)
-        self.recv_buffer += data
 
         if not data:
             self.close()
+            return
+
+        self.recv_buffer += data
 
         messages = self.parse_buffer()
         for message in messages:
@@ -103,5 +105,5 @@ if __name__ == '__main__':
                 connection = key.data
                 if mask & selectors.EVENT_READ:
                     connection.read()
-                elif mask & selectors.EVENT_WRITE:
+                if mask & selectors.EVENT_WRITE:
                     connection.write()
