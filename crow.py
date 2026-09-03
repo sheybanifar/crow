@@ -27,7 +27,11 @@ class Connection:
             self.enable_write()
 
     def write(self):
-        pass
+        sent = self.sock.send(self.send_buffer)
+        self.send_buffer = self.send_buffer[sent:]
+
+        if not self.send_buffer:
+            self.disable_write()
 
     def parse_buffer(self):
         messages = []
@@ -59,6 +63,17 @@ class Connection:
             return
 
         self.events |= selectors.EVENT_WRITE
+        selector.modify(
+            self.sock,
+            self.events,
+            data=self
+        )
+
+    def disable_write(self):
+        if self.events & ~selectors.EVENT_WRITE:
+            return
+
+        self.events &= ~selectors.EVENT_WRITE
         selector.modify(
             self.sock,
             self.events,
