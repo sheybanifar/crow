@@ -11,4 +11,5 @@
 
 
 * logging chat history and clients information
+* Connection Management; TCP keepalive, heartbeat
 
