@@ -38,7 +38,7 @@ class Connection:
 
         while True:
             if len(self.recv_buffer) < 2:
-                break
+                return
 
             payload_length = int.from_bytes(
                 self.recv_buffer[:2],
@@ -46,14 +46,14 @@ class Connection:
             )
             total_length = 2 + payload_length
             if len(self.recv_buffer) < total_length:
-                break
+                return
 
             payload = self.recv_buffer[2:total_length]
 
             self.recv_buffer = self.recv_buffer[total_length:]
             messages.append(payload)
 
-        return messages
+            return messages
 
     def handle_message(self, message):
         self.send_buffer += message
