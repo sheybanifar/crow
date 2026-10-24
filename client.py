@@ -8,6 +8,7 @@ def get_username():
             username = input('Welcome! Enter your name: ')
             return username
     except (EOFError, KeyboardInterrupt):
+        # experimental. terminating the program must be implemented in future.
         print('exit!')
         exit()
 
@@ -16,6 +17,7 @@ def get_input(username: str):
         while True:
             message = input(f'{username}: ')
     except (EOFError, KeyboardInterrupt):
+        # experimental. terminating the program must be implemented in future.
         print('exit!')
         exit()
 
@@ -23,14 +25,11 @@ selector = selectors.DefaultSelector()
 
 def first_connect(sock: socket.socket):
     try:
-        connected = not bool(sock.connect_ex(('127.0.0.1', 2001)))
-        if connected:
-            print('Connected!')
-            selector.register(sock, selectors.EVENT_READ)
-        else:
-            print('Error: ', connected)
+        sock.connect(('127.0.0.1', 2001))
+        sock.setblocking(False)
+        selector.register(sock, selectors.EVENT_READ)
     except Exception as e:
-        print(f'Unexpected error was occured!\n', e)
+        print(e)
 
 if __name__ == '__main__':
     username = get_username()
@@ -38,8 +37,6 @@ if __name__ == '__main__':
     input_thread.start()
 
     client = socket.socket()
-    client.setblocking(False)
-    
     first_connect(client)
 
     while True:
