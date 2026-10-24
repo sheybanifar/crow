@@ -9,15 +9,15 @@ def get_username():
             return username
     except (EOFError, KeyboardInterrupt):
         print('exit!')
-        return
+        exit()
 
 def get_input(username: str):
     try:
         while True:
-            return input(f'{username}: ')
+            message = input(f'{username}: ')
     except (EOFError, KeyboardInterrupt):
         print('exit!')
-        return
+        exit()
 
 selector = selectors.DefaultSelector()
 

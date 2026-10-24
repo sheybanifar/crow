@@ -13,3 +13,11 @@
 * logging chat history and clients information
 * Connection Management; TCP keepalive, heartbeat
 
+
+
+###### client.py
+
+
+
+* add possibility for client to close the program in 'input\_thread' by Control-C.
+
