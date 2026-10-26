@@ -29,7 +29,8 @@ def first_connect(sock: socket.socket):
         sock.setblocking(False)
         selector.register(sock, selectors.EVENT_READ)
     except Exception as e:
-        raise e
+        print(f'Error: {e.__class__.__name__}')
+        exit()
 
 if __name__ == '__main__':
     username = get_username()
