@@ -1,6 +1,9 @@
 import socket
 import selectors
 import threading
+import queue
+
+q = queue.Queue()
 
 def get_username():
     try:
@@ -16,6 +19,7 @@ def get_input(username: str):
     try:
         while True:
             message = input(f'{username}: ')
+            q.put(message)
     except (EOFError, KeyboardInterrupt):
         # experimental. terminating the program must be implemented in future.
         print('exit!')
@@ -34,11 +38,12 @@ def first_connect(sock: socket.socket):
 
 if __name__ == '__main__':
     username = get_username()
-    input_thread = threading.Thread(target=get_input, args=(username,))
-    input_thread.start()
-
+    
     client = socket.socket()
     first_connect(client)
+
+    input_thread = threading.Thread(target=get_input, args=(username,))
+    input_thread.start()
 
     while True:
         events = selector.select(timeout=3)
