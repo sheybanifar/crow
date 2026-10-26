@@ -29,7 +29,7 @@ def first_connect(sock: socket.socket):
         sock.setblocking(False)
         selector.register(sock, selectors.EVENT_READ)
     except Exception as e:
-        print(f'Error: {e.__class__.__name__}')
+        print(f'Error: {e}')
         exit()
 
 if __name__ == '__main__':
