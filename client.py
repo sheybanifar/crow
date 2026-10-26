@@ -29,7 +29,7 @@ def first_connect(sock: socket.socket):
         sock.setblocking(False)
         selector.register(sock, selectors.EVENT_READ)
     except Exception as e:
-        print(e)
+        raise e
 
 if __name__ == '__main__':
     username = get_username()
