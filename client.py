@@ -3,6 +3,7 @@ import selectors
 import threading
 import queue
 
+selector = selectors.DefaultSelector()
 q = queue.Queue()
 
 def get_username():
@@ -15,21 +16,29 @@ def get_username():
         print('exit!')
         exit()
 
-def get_input(username: str):
+def get_input(username: str, user_queue):
     try:
         while True:
-            message = input(f'{username}: ')
-            try:
-                q.put(message, timeout=20)
-            except queue.Full as queueError:
-                print('Inserting item into queue was failed!')
-                print(queueError)
+            message = input(f'{username}: ').encode()
+            user_queue.put(message)
     except (EOFError, KeyboardInterrupt):
         # experimental. terminating the program must be implemented in future.
         print('exit!')
         exit()
 
-selector = selectors.DefaultSelector()
+def get_messages(user_queue):
+    messages = []
+    try:
+        while True:
+            if not user_queue.empty():
+                message = user_queue.get_nowait()
+                messages.append(message)
+                user_queue.task_done()
+            else:
+                return messages
+    except queue.Empty as e:
+        print(e)
+        return messages
 
 def first_connect(sock: socket.socket):
     try:
@@ -46,10 +55,13 @@ if __name__ == '__main__':
     client = socket.socket()
     first_connect(client)
 
-    input_thread = threading.Thread(target=get_input, args=(username,))
+    input_thread = threading.Thread(target=get_input, args=(username, q))
     input_thread.start()
 
     while True:
+        user_messages = get_messages(q)
+        print(user_messages)
+
         events = selector.select(timeout=3)
 
         for key, mask in events:
