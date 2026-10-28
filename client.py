@@ -19,7 +19,11 @@ def get_input(username: str):
     try:
         while True:
             message = input(f'{username}: ')
-            q.put(message)
+            try:
+                q.put(message, timeout=20)
+            except queue.Full as queueError:
+                print('Inserting item into queue was failed!')
+                print(queueError)
     except (EOFError, KeyboardInterrupt):
         # experimental. terminating the program must be implemented in future.
         print('exit!')
