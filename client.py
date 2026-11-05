@@ -35,6 +35,21 @@ def get_message(user_queue):
     except queue.Empty as e:
         print(e)
 
+class Connection:
+    send_buffer = bytearray()
+
+    @classmethod
+    def prepare_to_send(cls, callback, sock: socket.socket, user_queue):
+        message = callback(user_queue)
+        cls.send_buffer += message
+        key = selector.get_key(sock)
+        if not (key.events & selectors.EVENT_WRITE):
+            key.events |= selectors.EVENT_WRITE
+            selector.modify(sock, )
+
+    def push(sock, msg):
+        pass
+
 def first_connect(sock: socket.socket):
     try:
         sock.connect(('127.0.0.1', 2001))
@@ -48,7 +63,7 @@ if __name__ == '__main__':
     username = get_username()
 
     waiter, notifier = socket.socketpair()
-    selector.register(waiter, selectors.EVENT_READ)
+    selector.register(waiter, selectors.EVENT_READ, data=get_message)
     
     client = socket.socket()
     first_connect(client)
@@ -61,13 +76,10 @@ if __name__ == '__main__':
 
         for key, mask in events:
             if key.fileobj is waiter:
-                user_message = get_message(q)
-                print(user_message)
-                # selector.unregister(waiter)
+                callback = key.data
+                message = callback(q)
             else:
                 if mask & selectors.EVENT_READ:
                     pass
-                    # if not (data := key.fileobj.recv()):
-                    #     key.fileobj.close()
                 if mask & selectors.EVENT_WRITE:
                     pass
