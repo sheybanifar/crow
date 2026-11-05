@@ -21,7 +21,7 @@ def get_input(username: str, user_queue, sock: socket.socket):
         while True:
             message = input(f'{username}: ').encode()
             user_queue.put(message)
-            sock.sendall(message)
+            sock.sendall(b'1')
     except (EOFError, KeyboardInterrupt):
         # experimental. terminating the program must be implemented in future.
         print('exit!')
@@ -53,13 +53,13 @@ def first_connect(sock: socket.socket):
 if __name__ == '__main__':
     username = get_username()
 
-    waiter, notifer = socket.socketpair()
+    waiter, notifier = socket.socketpair()
     selector.register(waiter, selectors.EVENT_READ)
     
     client = socket.socket()
     first_connect(client)
 
-    input_thread = threading.Thread(target=get_input, args=(username, q, notifer))
+    input_thread = threading.Thread(target=get_input, args=(username, q, notifier))
     input_thread.start()
 
     while True:
@@ -69,7 +69,7 @@ if __name__ == '__main__':
             if key.fileobj is waiter:
                 user_messages = get_messages(q)
                 print(user_messages)
-                selector.unregister(waiter)
+                # selector.unregister(waiter)
             else:
                 if mask & selectors.EVENT_READ:
                     pass
