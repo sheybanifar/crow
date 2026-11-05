@@ -27,19 +27,13 @@ def get_input(username: str, user_queue, sock: socket.socket):
         print('exit!')
         exit()
 
-def get_messages(user_queue):
-    messages = []
+def get_message(user_queue):
     try:
-        while True:
-            if not user_queue.empty():
-                message = user_queue.get_nowait()
-                messages.append(message)
-                user_queue.task_done()
-            else:
-                return messages
+        message = user_queue.get()
+        user_queue.task_done()
+        return message
     except queue.Empty as e:
         print(e)
-        return messages
 
 def first_connect(sock: socket.socket):
     try:
@@ -67,8 +61,8 @@ if __name__ == '__main__':
 
         for key, mask in events:
             if key.fileobj is waiter:
-                user_messages = get_messages(q)
-                print(user_messages)
+                user_message = get_message(q)
+                print(user_message)
                 # selector.unregister(waiter)
             else:
                 if mask & selectors.EVENT_READ:
