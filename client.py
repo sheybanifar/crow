@@ -36,19 +36,29 @@ def get_message(user_queue):
         print(e)
 
 class Connection:
-    send_buffer = bytearray()
-
-    @classmethod
-    def prepare_to_send(cls, callback, sock: socket.socket, user_queue):
-        message = callback(user_queue)
-        cls.send_buffer += message
-        key = selector.get_key(sock)
+    def __init__(self, sock):
+        self.sock = sock
+        self.event = selectors.EVENT_READ
+        self.send_buffer = bytearray()
+    
+    def enable_write(self):
+        key = selector.get_key(self.sock)
         if not (key.events & selectors.EVENT_WRITE):
-            key.events |= selectors.EVENT_WRITE
-            selector.modify(sock, )
+            self.event |= selectors.EVENT_WRITE
+            selector.modify(self.sock, self.event, self)
 
     def push(sock, msg):
         pass
+    
+    # @classmethod
+    # def prepare_to_send(cls, callback, sock: socket.socket, user_queue):
+    #     message = callback(user_queue)
+    #     cls.send_buffer += message
+    #     key = selector.get_key(sock)
+    #     if not (key.events & selectors.EVENT_WRITE):
+    #         key.events |= selectors.EVENT_WRITE
+    #         selector.modify(sock, )
+
 
 def first_connect(sock: socket.socket):
     try:
