@@ -27,38 +27,37 @@ def get_input(username: str, user_queue, sock: socket.socket):
         print('exit!')
         exit()
 
-def get_message(user_queue):
-    try:
-        message = user_queue.get()
-        user_queue.task_done()
-        return message
-    except queue.Empty as e:
-        print(e)
-
 class Connection:
     def __init__(self, sock):
         self.sock = sock
         self.event = selectors.EVENT_READ
         self.send_buffer = bytearray()
     
+    def get_message(self, user_queue):
+        try:
+            message = user_queue.get()
+            user_queue.task_done()
+            return message
+        except queue.Empty as e:
+            print(e)
+
     def enable_write(self):
         key = selector.get_key(self.sock)
         if not (key.events & selectors.EVENT_WRITE):
             self.event |= selectors.EVENT_WRITE
             selector.modify(self.sock, self.event, self)
 
-    def push(sock, msg):
-        pass
-    
-    # @classmethod
-    # def prepare_to_send(cls, callback, sock: socket.socket, user_queue):
-    #     message = callback(user_queue)
-    #     cls.send_buffer += message
-    #     key = selector.get_key(sock)
-    #     if not (key.events & selectors.EVENT_WRITE):
-    #         key.events |= selectors.EVENT_WRITE
-    #         selector.modify(sock, )
+    def populate_sendbuffer(self, user_queue):
+        message = self.get_message(user_queue)
+        self.send_buffer += message
 
+    def push(self, sock: socket.socket):
+        self.populate_sendbuffer(q)
+        self.enable_write()
+        sent = sock.send(self.send_buffer)
+        self.send_buffer = self.send_buffer[sent:]
+
+        return sent
 
 def first_connect(sock: socket.socket):
     try:
@@ -73,7 +72,9 @@ if __name__ == '__main__':
     username = get_username()
 
     waiter, notifier = socket.socketpair()
-    selector.register(waiter, selectors.EVENT_READ, data=get_message)
+
+    conn = Connection(waiter)
+    selector.register(waiter, selectors.EVENT_READ, data=conn)
     
     client = socket.socket()
     first_connect(client)
@@ -86,10 +87,7 @@ if __name__ == '__main__':
 
         for key, mask in events:
             if key.fileobj is waiter:
-                callback = key.data
-                message = callback(q)
-            else:
-                if mask & selectors.EVENT_READ:
-                    pass
-                if mask & selectors.EVENT_WRITE:
-                    pass
+                conn: Connection = key.data
+                sent = conn.push(key.fileobj)
+                print(sent)
+            
