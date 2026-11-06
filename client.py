@@ -16,18 +16,17 @@ def get_username():
         print('exit!')
         exit()
 
-def get_input(username: str, user_queue, sock: socket.socket):
+def get_input(username: str, user_queue, notifier: socket.socket):
     try:
         while True:
             message = input(f'{username}: ').encode()
             user_queue.put(message)
-            sock.sendall(b'1')
+            notifier.sendall(b'1')
     except (EOFError, KeyboardInterrupt):
         # experimental. terminating the program must be implemented in future.
-        print('exit!')
         exit()
     finally:
-        sock.close()
+        notifier.close()
 
 class Connection:
     def __init__(self, sock):
@@ -53,18 +52,27 @@ class Connection:
         message = self.get_message(user_queue)
         self.send_buffer += message
 
-    def push(self, sock: socket.socket):
+    def push(self, client: socket.socket, waiter: socket.socket):
+        if self.is_closed(waiter):
+            return
+        
         self.populate_sendbuffer(q)
         self.enable_write()
-        sent = sock.send(self.send_buffer)
+        sent = client.send(self.send_buffer)
         self.send_buffer = self.send_buffer[sent:]
 
         return sent
 
-    def is_closed(self):
-        data = self.sock.recv()
+    def is_closed(self, waiter: socket.socket):
+        data = waiter.recv(1024)
         if not data:
-            pass
+            selector.unregister(waiter)
+            selector.unregister(self.sock)
+            waiter.close()
+            self.sock.close()
+            return True
+        else:
+            return False
 
 def first_connect(sock: socket.socket):
     try:
@@ -91,12 +99,16 @@ if __name__ == '__main__':
     input_thread.start()
 
     while True:
-        events = selector.select(timeout=3)
+        try:
+            events = selector.select(timeout=3)
+        except KeyboardInterrupt:
+            print('Bye! Bye!')
+            exit()
 
         for key, mask in events:
             if key.fileobj is waiter:
                 key_ = selector.get_key(client)
                 conn = key_.data
-                sent = conn.push(client)
+                sent = conn.push(client, key.fileobj)
                 print(sent)
             
