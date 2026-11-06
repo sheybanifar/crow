@@ -64,13 +64,14 @@ class Connection:
     def is_closed(self):
         data = self.sock.recv()
         if not data:
-            
+            pass
 
 def first_connect(sock: socket.socket):
     try:
         sock.connect(('127.0.0.1', 2001))
         sock.setblocking(False)
-        selector.register(sock, selectors.EVENT_READ)
+        conn = Connection(sock)
+        selector.register(sock, conn.event, data=conn)
     except Exception as e:
         print(f'Error: {e}')
         exit()
@@ -94,7 +95,8 @@ if __name__ == '__main__':
 
         for key, mask in events:
             if key.fileobj is waiter:
-                conn: Connection = key.data
-                sent = conn.push(key.fileobj)
+                key_ = selector.get_key(client)
+                conn = key_.data
+                sent = conn.push(client)
                 print(sent)
             
