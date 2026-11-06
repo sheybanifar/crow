@@ -4,6 +4,9 @@ import socket
 selector = selectors.DefaultSelector()
 
 class Connection:
+
+    memebers = {}
+
     def __init__(self, sock: socket.socket):
         self.sock = sock
         self.events = selectors.EVENT_READ
@@ -86,18 +89,23 @@ class Connection:
         selector.unregister(self.sock)
         self.sock.close()
 
+
+
+def recv_all(sock: socket.socket):
+
+
 def accept_connection(sock: socket.socket):
-    if sock is server:
-        client, addr = sock.accept()
-        client.setblocking(False)
+    client, addr = sock.accept()
+    recv_all()
+    client.setblocking(False)
 
-        connection = Connection(client)
+    connection = Connection(client)
 
-        selector.register(
-            client,
-            connection.events,
-            data=connection
-        )
+    selector.register(
+        client,
+        connection.events,
+        data=connection
+    )
 
 if __name__ == '__main__':
 

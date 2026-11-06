@@ -19,5 +19,5 @@
 
 
 
-* add possibility for client to close the program in 'input\_thread' by Control-C.
+* \[DONE] add possibility for client to close the program in 'input\_thread' by Control-C.
 

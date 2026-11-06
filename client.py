@@ -2,6 +2,7 @@ import socket
 import selectors
 import threading
 import queue
+import struct
 
 selector = selectors.DefaultSelector()
 q = queue.Queue()
@@ -10,11 +11,22 @@ def get_username():
     try:
         while True:
             username = input('Welcome! Enter your name: ')
-            return username
+            if validate_username(username):
+                return username
+            else:
+                print('Invalid username! correct it.')
     except (EOFError, KeyboardInterrupt):
         # experimental. terminating the program must be implemented in future.
         print('exit!')
         exit()
+
+def validate_username(username: str):
+    username = username.strip()
+
+    if username != '' and len(username) <= 30:
+        return username
+    else:
+        return False
 
 def get_input(username: str, user_queue, notifier: socket.socket):
     try:
@@ -74,9 +86,13 @@ class Connection:
         else:
             return False
 
-def first_connect(sock: socket.socket):
+def send_username(sock, username):
+
+
+def first_connect(sock: socket.socket, username):
     try:
         sock.connect(('127.0.0.1', 2001))
+        sock.sendall(username.encode())
         sock.setblocking(False)
         conn = Connection(sock)
         selector.register(sock, conn.event, data=conn)
@@ -93,7 +109,7 @@ if __name__ == '__main__':
     selector.register(waiter, selectors.EVENT_READ, data=conn)
     
     client = socket.socket()
-    first_connect(client)
+    first_connect(client, username)
 
     input_thread = threading.Thread(target=get_input, args=(username, q, notifier))
     input_thread.start()
