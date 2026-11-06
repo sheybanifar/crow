@@ -26,6 +26,8 @@ def get_input(username: str, user_queue, sock: socket.socket):
         # experimental. terminating the program must be implemented in future.
         print('exit!')
         exit()
+    finally:
+        sock.close()
 
 class Connection:
     def __init__(self, sock):
@@ -58,6 +60,11 @@ class Connection:
         self.send_buffer = self.send_buffer[sent:]
 
         return sent
+
+    def is_closed(self):
+        data = self.sock.recv()
+        if not data:
+            
 
 def first_connect(sock: socket.socket):
     try:
