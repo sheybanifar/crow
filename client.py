@@ -86,13 +86,17 @@ class Connection:
         else:
             return False
 
-def send_username(sock, username):
-
+def send_username(sock: socket.socket, username: str):
+    payload = username.encode()
+    payload_len = len(payload)
+    header = struct.pack('!H', payload_len)
+    packet = header + payload
+    sock.sendall(packet)
 
 def first_connect(sock: socket.socket, username):
     try:
         sock.connect(('127.0.0.1', 2001))
-        sock.sendall(username.encode())
+        send_username(sock, username)
         sock.setblocking(False)
         conn = Connection(sock)
         selector.register(sock, conn.event, data=conn)
