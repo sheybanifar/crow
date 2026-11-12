@@ -7,6 +7,8 @@ import struct
 selector = selectors.DefaultSelector()
 q = queue.Queue()
 
+HEADER_STRUCT = struct.Struct('!BQ')
+
 def get_username():
     try:
         while True:
@@ -85,6 +87,21 @@ class Connection:
             return True
         else:
             return False
+
+def make_package(msg_type, payload):
+    payload_len = len(payload)
+    header = HEADER_STRUCT.pack(msg_type, payload_len)
+    package = header + payload.encode()
+
+    return package
+
+def bSend(sock: socket.socket, msg_type, payload):
+    '''Blocking send'''
+
+    def wrapper(*args, **kwargs):
+        
+    package = make_package(msg_type, payload)
+    sock.sendall(package)
 
 def send_username(sock: socket.socket, username: str):
     payload = username.encode()
