@@ -3,11 +3,16 @@ import selectors
 import threading
 import queue
 import struct
+from enum import IntEnum
 
 selector = selectors.DefaultSelector()
 q = queue.Queue()
 
 HEADER_STRUCT = struct.Struct('!BQ')
+
+class MessageType(IntEnum):
+    WAKE_UP = 1
+    SEND_USERNAME = 2
 
 def get_username():
     try:
