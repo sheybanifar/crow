@@ -40,7 +40,7 @@ def get_input(username: str, user_queue, notifier: socket.socket):
         while True:
             message = input(f'{username}: ').encode()
             user_queue.put(message)
-            notifier.sendall(b'1')
+            bSend(notifier, MessageType.WAKE_UP, b'1')
     except (EOFError, KeyboardInterrupt):
         # experimental. terminating the program must be implemented in future.
         exit()
@@ -71,14 +71,18 @@ class Connection:
         message = self.get_message(user_queue)
         self.send_buffer += message
 
-    def push(self, client: socket.socket, waiter: socket.socket):
+    def push(self, waiter: socket.socket):
         if self.is_closed(waiter):
             return
         
         self.populate_sendbuffer(q)
         self.enable_write()
-        sent = client.send(self.send_buffer)
+        sent = self.sock.send(self.send_buffer)
         self.send_buffer = self.send_buffer[sent:]
+
+        if len(self.send_buffer) == 0:
+            self.event = selectors.EVENT_READ
+            selector.modify(self.sock, self.event, self)
 
         return sent
 
@@ -93,18 +97,17 @@ class Connection:
         else:
             return False
 
-def make_package(msg_type, payload):
+def make_package(msg_type: MessageType, payload):
+    payload = payload.encode()
     payload_len = len(payload)
     header = HEADER_STRUCT.pack(msg_type, payload_len)
-    package = header + payload.encode()
+    package = header + payload
 
     return package
 
-def bSend(sock: socket.socket, msg_type, payload):
+def bSend(sock: socket.socket, msg_type: MessageType, payload):
     '''Blocking send'''
 
-    def wrapper(*args, **kwargs):
-        
     package = make_package(msg_type, payload)
     sock.sendall(package)
 
@@ -118,7 +121,7 @@ def send_username(sock: socket.socket, username: str):
 def first_connect(sock: socket.socket, username):
     try:
         sock.connect(('127.0.0.1', 2001))
-        send_username(sock, username)
+        bSend(sock, MessageType.SEND_USERNAME, username)
         sock.setblocking(False)
         conn = Connection(sock)
         selector.register(sock, conn.event, data=conn)
