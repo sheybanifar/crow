@@ -38,9 +38,9 @@ def validate_username(username: str):
 def get_input(username: str, user_queue, notifier: socket.socket):
     try:
         while True:
-            message = input(f'{username}: ').encode()
+            message = input(f'{username}: ')
             user_queue.put(message)
-            bSend(notifier, MessageType.WAKE_UP, b'1')
+            notifier.send(b'1')
     except (EOFError, KeyboardInterrupt):
         # experimental. terminating the program must be implemented in future.
         exit()
@@ -54,12 +54,14 @@ class Connection:
         self.send_buffer = bytearray()
     
     def get_message(self, user_queue):
-        try:
-            message = user_queue.get()
-            user_queue.task_done()
-            return message
-        except queue.Empty as e:
-            print(e)
+        while True:
+            try:
+                message = user_queue.get_nowait()
+                self.send_buffer += message
+                user_queue.task_done()
+            except queue.Empty as e:
+                print(e)
+                break
 
     def enable_write(self):
         key = selector.get_key(self.sock)
@@ -67,15 +69,15 @@ class Connection:
             self.event |= selectors.EVENT_WRITE
             selector.modify(self.sock, self.event, self)
 
-    def populate_sendbuffer(self, user_queue):
-        message = self.get_message(user_queue)
-        self.send_buffer += message
+    # def populate_sendbuffer(self, user_queue):
+    #     message = self.get_message(user_queue)
+    #     self.send_buffer += message
 
     def push(self, waiter: socket.socket):
         if self.is_closed(waiter):
             return
         
-        self.populate_sendbuffer(q)
+        # self.populate_sendbuffer(q)
         self.enable_write()
         sent = self.sock.send(self.send_buffer)
         self.send_buffer = self.send_buffer[sent:]
@@ -105,12 +107,6 @@ def make_package(msg_type: MessageType, payload):
 
     return package
 
-def bSend(sock: socket.socket, msg_type: MessageType, payload):
-    '''Blocking send'''
-
-    package = make_package(msg_type, payload)
-    sock.sendall(package)
-
 def send_username(sock: socket.socket, username: str):
     payload = username.encode()
     payload_len = len(payload)
@@ -118,10 +114,9 @@ def send_username(sock: socket.socket, username: str):
     packet = header + payload
     sock.sendall(packet)
 
-def first_connect(sock: socket.socket, username):
+def first_connect(sock: socket.socket):
     try:
         sock.connect(('127.0.0.1', 2001))
-        bSend(sock, MessageType.SEND_USERNAME, username)
         sock.setblocking(False)
         conn = Connection(sock)
         selector.register(sock, conn.event, data=conn)
@@ -134,26 +129,34 @@ if __name__ == '__main__':
 
     waiter, notifier = socket.socketpair()
 
+    waiter.setblocking(False)
+    notifier.setblocking(False)
+
     conn = Connection(waiter)
-    selector.register(waiter, selectors.EVENT_READ, data=conn)
+    selector.register(waiter, conn.event, data=conn)
     
     client = socket.socket()
-    first_connect(client, username)
+    first_connect(client)
 
     input_thread = threading.Thread(target=get_input, args=(username, q, notifier))
     input_thread.start()
 
     while True:
-        try:
-            events = selector.select(timeout=3)
-        except KeyboardInterrupt:
-            print('Bye! Bye!')
-            exit()
+        events = selector.select(timeout=3)
 
         for key, mask in events:
             if key.fileobj is waiter:
-                key_ = selector.get_key(client)
-                conn = key_.data
-                sent = conn.push(client, key.fileobj)
-                print(sent)
+                pass
+            else:
+                conn = key.data
+                if mask & selectors.EVENT_WRITE:
+                    pass
+                if mask & selectors.EVENT_READ:
+                    pass
+
+            # if key.fileobj is waiter:
+            #     key_ = selector.get_key(client)
+            #     conn = key_.data
+            #     sent = conn.push(client, key.fileobj)
+            #     print(sent)
             

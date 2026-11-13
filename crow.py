@@ -30,11 +30,13 @@ class Connection:
             self.enable_write()
 
     def write(self):
+        if not self.send_buffer:
+            self.disable_write()
+            return
+
         sent = self.sock.send(self.send_buffer)
         self.send_buffer = self.send_buffer[sent:]
 
-        if not self.send_buffer:
-            self.disable_write()
 
     def parse_buffer(self):
         messages = []
@@ -55,8 +57,6 @@ class Connection:
 
             self.recv_buffer = self.recv_buffer[total_length:]
             messages.append(payload)
-
-            return messages
 
         return messages
 
@@ -92,11 +92,10 @@ class Connection:
 
 
 def recv_all(sock: socket.socket):
-
+    pass
 
 def accept_connection(sock: socket.socket):
     client, addr = sock.accept()
-    recv_all()
     client.setblocking(False)
 
     connection = Connection(client)
