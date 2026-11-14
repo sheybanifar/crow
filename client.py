@@ -38,7 +38,7 @@ def validate_username(username: str):
 def get_input(username: str, user_queue, notifier: socket.socket):
     try:
         while True:
-            message = input(f'{username}: ')
+            message = input(f'{username}: ').strip()
             user_queue.put(message)
             notifier.send(b'1')
     except (EOFError, KeyboardInterrupt):
@@ -53,14 +53,13 @@ class Connection:
         self.event = selectors.EVENT_READ
         self.send_buffer = bytearray()
     
-    def get_message(self, user_queue):
-        while True:
+    def get_message(self, user_queue, limit: int = 50):
+        for _ in range(limit):
             try:
-                message = user_queue.get_nowait()
-                self.send_buffer += message
+                message = user_queue.get_nowait().encode()
+                self.send_buffer.extend(message)
                 user_queue.task_done()
-            except queue.Empty as e:
-                print(e)
+            except queue.Empty:
                 break
 
     def enable_write(self):
@@ -124,6 +123,19 @@ def first_connect(sock: socket.socket):
         print(f'Error: {e}')
         exit()
 
+def drain_wakeup(waiter):
+    while True:
+        try:
+            data = waiter.recv(4096)
+
+            if not data:
+                return False
+        
+        except BlockingIOError:
+            break
+
+    return True
+
 if __name__ == '__main__':
     username = get_username()
 
@@ -146,8 +158,12 @@ if __name__ == '__main__':
 
         for key, mask in events:
             if key.fileobj is waiter:
-                conn = key.data
-                print(conn.send_buffer)
+                if not drain_wakeup(waiter):
+                    # Manage Shutdown
+                    pass
+                conn_client = selector.get_key(client).data
+                conn_client.get_message(q)
+                print(conn_client.send_buffer)
             else:
                 conn = key.data
                 if mask & selectors.EVENT_WRITE:
