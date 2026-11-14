@@ -146,7 +146,8 @@ if __name__ == '__main__':
 
         for key, mask in events:
             if key.fileobj is waiter:
-                pass
+                conn = key.data
+                print(conn.send_buffer)
             else:
                 conn = key.data
                 if mask & selectors.EVENT_WRITE:
