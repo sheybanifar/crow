@@ -57,10 +57,11 @@ class Connection:
         for _ in range(limit):
             try:
                 message = user_queue.get_nowait().encode()
-                self.send_buffer.extend(message)
-                user_queue.task_done()
             except queue.Empty:
                 break
+
+            self.send_buffer.extend(message)
+            user_queue.task_done()
 
     def enable_write(self):
         key = selector.get_key(self.sock)
