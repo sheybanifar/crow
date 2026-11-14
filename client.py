@@ -170,7 +170,7 @@ if __name__ == '__main__':
                 conn_client = selector.get_key(client).data
                 pending_messages = conn_client.get_message(q)
 
-                while pending_messages:
+                if pending_messages:
                     conn_client.get_message(q)
             else:
                 conn = key.data
@@ -178,10 +178,3 @@ if __name__ == '__main__':
                     pass
                 if mask & selectors.EVENT_READ:
                     pass
-
-            # if key.fileobj is waiter:
-            #     key_ = selector.get_key(client)
-            #     conn = key_.data
-            #     sent = conn.push(client, key.fileobj)
-            #     print(sent)
-            
