@@ -159,6 +159,8 @@ if __name__ == '__main__':
     input_thread = threading.Thread(target=get_input, args=(username, q, notifier))
     input_thread.start()
 
+    pending_messages = False
+
     while True:
         events = selector.select(timeout=3)
 
@@ -167,11 +169,13 @@ if __name__ == '__main__':
                 if not drain_wakeup(waiter):
                     # Manage Shutdown; implement in future...
                     break
+
+                pending_messages = True
+
+            if pending_messages:
                 conn_client = selector.get_key(client).data
                 pending_messages = conn_client.get_message(q)
 
-                if pending_messages:
-                    conn_client.get_message(q)
             else:
                 conn = key.data
                 if mask & selectors.EVENT_WRITE:
