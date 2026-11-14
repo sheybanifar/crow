@@ -54,14 +54,19 @@ class Connection:
         self.send_buffer = bytearray()
     
     def get_message(self, user_queue, limit: int = 50):
-        for _ in range(limit):
+        for i in range(limit):
             try:
                 message = user_queue.get_nowait().encode()
             except queue.Empty:
-                break
+                return False
 
             self.send_buffer.extend(message)
             user_queue.task_done()
+            
+            if i == limit - 1:
+                return not user_queue.empty()
+
+        return False
 
     def enable_write(self):
         key = selector.get_key(self.sock)
@@ -160,11 +165,13 @@ if __name__ == '__main__':
         for key, mask in events:
             if key.fileobj is waiter:
                 if not drain_wakeup(waiter):
-                    # Manage Shutdown
-                    pass
+                    # Manage Shutdown; implement in future...
+                    break
                 conn_client = selector.get_key(client).data
-                conn_client.get_message(q)
-                print(conn_client.send_buffer)
+                pending_messages = conn_client.get_message(q)
+
+                while pending_messages:
+                    conn_client.get_message(q)
             else:
                 conn = key.data
                 if mask & selectors.EVENT_WRITE:
