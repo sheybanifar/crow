@@ -162,7 +162,8 @@ if __name__ == '__main__':
     pending_messages = False
 
     while True:
-        events = selector.select(timeout=3)
+        timeout = 0 if pending_messages else 3
+        events = selector.select(timeout)
 
         for key, mask in events:
             if key.fileobj is waiter:
@@ -172,13 +173,13 @@ if __name__ == '__main__':
 
                 pending_messages = True
 
-            if pending_messages:
-                conn_client = selector.get_key(client).data
-                pending_messages = conn_client.get_message(q)
+        if pending_messages:
+            conn_client = selector.get_key(client).data
+            pending_messages = conn_client.get_message(q)
 
-            else:
-                conn = key.data
-                if mask & selectors.EVENT_WRITE:
-                    pass
-                if mask & selectors.EVENT_READ:
-                    pass
+            # else:
+            #     conn = key.data
+            #     if mask & selectors.EVENT_WRITE:
+            #         pass
+            #     if mask & selectors.EVENT_READ:
+            #         pass
