@@ -74,51 +74,6 @@ class Connection:
             self.event |= selectors.EVENT_WRITE
             selector.modify(self.sock, self.event, self)
 
-    # def populate_sendbuffer(self, user_queue):
-    #     message = self.get_message(user_queue)
-    #     self.send_buffer += message
-
-    def push(self, waiter: socket.socket):
-        if self.is_closed(waiter):
-            return
-        
-        # self.populate_sendbuffer(q)
-        self.enable_write()
-        sent = self.sock.send(self.send_buffer)
-        self.send_buffer = self.send_buffer[sent:]
-
-        if len(self.send_buffer) == 0:
-            self.event = selectors.EVENT_READ
-            selector.modify(self.sock, self.event, self)
-
-        return sent
-
-    def is_closed(self, waiter: socket.socket):
-        data = waiter.recv(1024)
-        if not data:
-            selector.unregister(waiter)
-            selector.unregister(self.sock)
-            waiter.close()
-            self.sock.close()
-            return True
-        else:
-            return False
-
-def make_package(msg_type: MessageType, payload):
-    payload = payload.encode()
-    payload_len = len(payload)
-    header = HEADER_STRUCT.pack(msg_type, payload_len)
-    package = header + payload
-
-    return package
-
-def send_username(sock: socket.socket, username: str):
-    payload = username.encode()
-    payload_len = len(payload)
-    header = struct.pack('!H', payload_len)
-    packet = header + payload
-    sock.sendall(packet)
-
 def first_connect(sock: socket.socket):
     try:
         sock.connect(('127.0.0.1', 2001))
@@ -155,6 +110,7 @@ if __name__ == '__main__':
     
     client = socket.socket()
     first_connect(client)
+    client_conn = selector.get_key(client).data
 
     input_thread = threading.Thread(target=get_input, args=(username, q, notifier))
     input_thread.start()
@@ -174,8 +130,7 @@ if __name__ == '__main__':
                 pending_messages = True
 
         if pending_messages:
-            conn_client = selector.get_key(client).data
-            pending_messages = conn_client.get_message(q)
+            pending_messages = client_conn.get_message(q)
 
             # else:
             #     conn = key.data
