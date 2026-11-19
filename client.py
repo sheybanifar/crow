@@ -8,12 +8,6 @@ from enum import IntEnum
 selector = selectors.DefaultSelector()
 q = queue.Queue()
 
-HEADER_STRUCT = struct.Struct('!BQ')
-
-class MessageType(IntEnum):
-    WAKE_UP = 1
-    SEND_USERNAME = 2
-
 def get_username():
     try:
         while True:
@@ -67,12 +61,6 @@ class Connection:
                 return not user_queue.empty()
 
         return False
-
-    def enable_write(self):
-        key = selector.get_key(self.sock)
-        if not (key.events & selectors.EVENT_WRITE):
-            self.event |= selectors.EVENT_WRITE
-            selector.modify(self.sock, self.event, self)
 
 def first_connect(sock: socket.socket):
     try:
