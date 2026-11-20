@@ -33,7 +33,8 @@ def get_input(username: str, user_queue, notifier: socket.socket):
     try:
         while True:
             message = input(f'{username}: ').strip()
-            user_queue.put(message)
+            if message:
+                user_queue.put(message)
             notifier.send(b'1')
     except (EOFError, KeyboardInterrupt):
         # experimental. terminating the program must be implemented in future.
